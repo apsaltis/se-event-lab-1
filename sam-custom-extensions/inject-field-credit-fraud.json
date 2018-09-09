@@ -2,7 +2,7 @@
       "streamingEngine": "STORM",
       "name": "INJECT-FIELD",
       "description": "Inject a new field that does not existing on the current event. The field value is user defined and of STRING type",
-      "jarFileName": "sam-custom-processor-inject-field-0.0.1-SNAPSHOT.jar",
+      "jarFileName": "sam-custom-processor-inject-field-0.0.1-SNAPSHOT-jar-with-dependencies.jar",
       "topologyComponentUISpecification": {
         "fields": [
           {
