@@ -1,5 +1,52 @@
 #!/bin/bash
 
+stopService () {
+       	SERVICE=$1
+       	SERVICE_STATUS=$(getServiceStatus $SERVICE)
+       	echo "*********************************Stopping Service $SERVICE ..."
+       	if [ "$SERVICE_STATUS" == STARTED ]; then
+        TASKID=$(curl -k -s -u $AMBARI_CREDS -H "X-Requested-By:ambari" -i -X PUT -d "{\"RequestInfo\": {\"context\": \"Stop $SERVICE\"}, \"ServiceInfo\": {\"maintenance_state\" : \"OFF\", \"state\": \"INSTALLED\"}}" http://$AMBARI_HOST:8080/api/v1/clusters/$CLUSTER_NAME/services/$SERVICE | grep "id" | grep -Po '([0-9]+)')
+
+        echo "*********************************Stop $SERVICE TaskID $TASKID"
+        sleep 2
+        LOOPESCAPE="false"
+        until [ "$LOOPESCAPE" == true ]; do
+            TASKSTATUS=$(curl -k -s -u $AMBARI_CREDS -X GET http://$AMBARI_HOST:8080/api/v1/clusters/$CLUSTER_NAME/requests/$TASKID | grep "request_status" | grep -Po '([A-Z]+)')
+            if [ "$TASKSTATUS" == COMPLETED ]; then
+                LOOPESCAPE="true"
+            fi
+            echo "*********************************Stop $SERVICE Task Status $TASKSTATUS"
+            sleep 2
+        done
+        echo "*********************************$SERVICE Service Stopped..."
+       	elif [ "$SERVICE_STATUS" == INSTALLED ]; then
+       	echo "*********************************$SERVICE Service Stopped..."
+       	fi
+}
+
+startService (){
+       	SERVICE=$1
+       	SERVICE_STATUS=$(getServiceStatus $SERVICE)
+       	echo "*********************************Starting Service $SERVICE ..."
+       	if [ "$SERVICE_STATUS" == INSTALLED ]; then
+        TASKID=$(curl -k -s -u $AMBARI_CREDS -H "X-Requested-By:ambari" -i -X PUT -d "{\"RequestInfo\": {\"context\": \"Start $SERVICE\"}, \"ServiceInfo\": {\"maintenance_state\" : \"OFF\", \"state\": \"STARTED\"}}" http://$AMBARI_HOST:8080/api/v1/clusters/$CLUSTER_NAME/services/$SERVICE | grep "id" | grep -Po '([0-9]+)')
+
+        echo "*********************************Start $SERVICE TaskID $TASKID"
+        sleep 2
+        LOOPESCAPE="false"
+        until [ "$LOOPESCAPE" == true ]; do
+            TASKSTATUS=$(curl -k -s -u $AMBARI_CREDS -X GET http://$AMBARI_HOST:8080/api/v1/clusters/$CLUSTER_NAME/requests/$TASKID | grep "request_status" | grep -Po '([A-Z]+)')
+            if [[ "$TASKSTATUS" == COMPLETED || "$TASKSTATUS" == FAILED ]]; then
+                LOOPESCAPE="true"
+            fi
+            echo "*********************************Start $SERVICE Task Status $TASKSTATUS"
+            sleep 2
+        done
+       	elif [ "$SERVICE_STATUS" == STARTED ]; then
+       	echo "*********************************$SERVICE Service Started..."
+       	fi
+}
+
 getHiveServerHost () {
         HIVESERVER_HOST=$(curl -k -s -u $AMBARI_CREDS -X GET http://$AMBARI_HOST:8080/api/v1/clusters/$CLUSTER_NAME/services/HIVE/components/HIVE_SERVER|grep "host_name"|grep -Po ': "([a-zA-Z0-9\-_!?.]+)'|grep -Po '([a-zA-Z0-9\-_!?.]+)')
         echo $HIVESERVER_HOST
@@ -57,20 +104,49 @@ initializeSAMNamespace () {
 }
 
 uploadSAMExtensions() {
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"TIMESTAMP_LONG","displayName":"TIMESTAMP_LONG","description":"Converts a String timestamp to Timestamp Long","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.time.ConvertToTimestampLong"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"GET_WEEK","displayName":"GET_WEEK","description":"For a given data time string, returns week of the input date","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.time.GetWeek"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"ABSOLUTE","displayName":"ABSOLUTE","description":"Given a negative or positive Double, returns positive value.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Absolute"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"ADD","displayName":"ADD","description":"Returns the Sum of two Doubles.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Add"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"SUBTRACT","displayName":"SUBTRACT","description":"Returns the Difference of two Doubles.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Subtract"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"MULTIPLY","displayName":"MULTIPLY","description":"Returns the Product of two Doubles.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Multiply"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"DIVIDE","displayName":"DIVIDE","description":"Returns the Quotient of two Doubles.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Divide"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"GEODISTANCE","displayName":"GEODISTANCE","description":"Returns the geographic distance between two Geo Coordinates. The function takes 4 arguments of Double type in the following order: origin latitude, origin longitude, destination latitude, destination longitude. ","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.geo.GeoDistance"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"STRING_TO_DOUBLE","displayName":"STRING_TO_DOUBLE","description":"Given a String, returns Double.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.datatype.conversion.StringToDouble"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"STRING_TO_LONG","displayName":"STRING_TO_LONG","description":"Given a String, returns Long.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.datatype.conversion.StringToLong"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
-	curl -sS -X POST -i -F jarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-processor-0.0.5-jar-with-dependencies.jar http://$AMBARI_HOST:7777/api/v1/catalog/streams/componentbundles/PROCESSOR/custom -F customProcessorInfo=@$ROOT_PATH/sam-custom-extensions/phoenix-enrich-credit-fraud.json
-	curl -sS -X POST -i -F jarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-processor-phoenix-upsert-0.0.1-SNAPSHOT-jar-with-dependencies.jar  http://$AMBARI_HOST:7777/api/v1/catalog/streams/componentbundles/PROCESSOR/custom -F customProcessorInfo=@$ROOT_PATH/sam-custom-extensions/phoenix-upsert-credit-fraud.json
-	curl -sS -X POST -i -F jarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-sink-0.0.5-jar-with-dependencies.jar http://$AMBARI_HOST:7777/api/v1/catalog/streams/componentbundles/PROCESSOR/custom -F customProcessorInfo=@$ROOT_PATH/sam-custom-extensions/cometd-sink-credit-fraud.json
-	curl -sS -X POST -i -F jarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-processor-inject-field-0.0.1-SNAPSHOT-jar-with-dependencies.jar http://$AMBARI_HOST:7777/api/v1/catalog/streams/componentbundles/PROCESSOR/custom -F customProcessorInfo=@$ROOT_PATH/sam-custom-extensions/inject-field-credit-fraud.json
+	git clone https://github.com/vakshorton/sam-custom-extensions.git
+	cd $ROOT_PATH/sam-custom-extensions/sam-custom-udf/
+	mvn clean package
+	mvn assembly:assembly
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"TIMESTAMP_LONG","displayName":"TIMESTAMP_LONG","description":"Converts a String timestamp to Timestamp Long","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.time.ConvertToTimestampLong"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"GET_WEEK","displayName":"GET_WEEK","description":"For a given data time string, returns week of the input date","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.time.GetWeek"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"ABSOLUTE","displayName":"ABSOLUTE","description":"Given a negative or positive Double, returns positive value.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Absolute"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"ADD","displayName":"ADD","description":"Returns the Sum of two Doubles.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Add"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"SUBTRACT","displayName":"SUBTRACT","description":"Returns the Difference of two Doubles.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Subtract"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"MULTIPLY","displayName":"MULTIPLY","description":"Returns the Product of two Doubles.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Multiply"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"DIVIDE","displayName":"DIVIDE","description":"Returns the Quotient of two Doubles.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.math.Divide"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"GEODISTANCE","displayName":"GEODISTANCE","description":"Returns the geographic distance between two Geo Coordinates. The function takes 4 arguments of Double type in the following order: origin latitude, origin longitude, destination latitude, destination longitude. ","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.geo.GeoDistance"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"STRING_TO_DOUBLE","displayName":"STRING_TO_DOUBLE","description":"Given a String, returns Double.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.datatype.conversion.StringToDouble"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	curl -F udfJarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-udf/target/sam-custom-udf-0.0.5.jar -F 'udfConfig={"name":"STRING_TO_LONG","displayName":"STRING_TO_LONG","description":"Given a String, returns Long.","type":"FUNCTION","className":"hortonworks.hdf.sam.custom.udf.datatype.conversion.StringToLong"};type=application/json' -X POST http://$AMBARI_HOST:7777/api/v1/catalog/streams/udfs
+	
+	#Import Custom Processors
+	cd $ROOT_PATH/sam-custom-extensions/sam-custom-processor
+	mvn clean package -DskipTests
+	mvn assembly:assembly -DskipTests
+	curl -sS -X POST -i -F jarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-processor/target/sam-custom-processor-0.0.5-jar-with-dependencies.jar http://$AMBARI_HOST:7777/api/v1/catalog/streams/componentbundles/PROCESSOR/custom -F customProcessorInfo=@$ROOT_PATH/sam-custom-extensions/sam-custom-processor/src/main/resources/phoenix-enrich-credit-fraud.json
+	
+	cd $ROOT_PATH/sam-custom-extensions/sam-custom-processor-phoenix-upsert
+	mvn clean package -DskipTests
+	mvn assembly:assembly -DskipTests
+	
+	curl -sS -X POST -i -F jarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-processor-phoenix-upsert/target/sam-custom-processor-phoenix-upsert-0.0.1-SNAPSHOT-jar-with-dependencies.jar  http://$AMBARI_HOST:7777/api/v1/catalog/streams/componentbundles/PROCESSOR/custom -F customProcessorInfo=@$ROOT_PATH/sam-custom-extensions/sam-custom-processor-phoenix-upsert/src/main/resources/phoenix-upsert-credit-fraud.json
+	
+	cd $ROOT_PATH/sam-custom-extensions/sam-custom-sink
+	mvn clean package -DskipTests
+	mvn assembly:assembly -DskipTests
+	
+	curl -sS -X POST -i -F jarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-sink/target/sam-custom-sink-0.0.5-jar-with-dependencies.jar http://$AMBARI_HOST:7777/api/v1/catalog/streams/componentbundles/PROCESSOR/custom -F customProcessorInfo=@$ROOT_PATH/sam-custom-extensions/sam-custom-sink/src/main/resources/cometd-sink-credit-fraud.json
+	
+	cd $ROOT_PATH/sam-custom-extensions/sam-custom-processor-inject-field
+	mvn clean package -DskipTests
+	mvn assembly:assembly -DskipTests
+	curl -sS -X POST -i -F jarFile=@$ROOT_PATH/sam-custom-extensions/sam-custom-processor-inject-field/target/sam-custom-processor-inject-field-0.0.1-SNAPSHOT.jar http://$AMBARI_HOST:7777/api/v1/catalog/streams/componentbundles/PROCESSOR/custom -F customProcessorInfo=@$ROOT_PATH/sam-custom-extensions/sam-custom-processor-inject-field/src/main/resources/inject-field-credit-fraud.json
+
+	rm -rf /tmp/*
+	stopService STREAMLINE
+	sleep 2
+	startService STREAMLINE
+	sleep 2
 }
 
 pushSchemasToRegistry (){		
