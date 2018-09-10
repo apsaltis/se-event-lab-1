@@ -82,6 +82,10 @@ pushSchemasToRegistry (){
 	curl -u admin:admin -i -H "content-type: application/json" -d "$PAYLOAD" -X POST http://$AMBARI_HOST:7788/api/v1/schemaregistry/schemas
 	PAYLOAD="{\"schemaText\":\"{\\\"type\\\":\\\"record\\\",\\\"name\\\":\\\"original_transaction\\\",\\\"fields\\\" : [{\\\"name\\\": \\\"accountnumber\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"accounttype\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"merchantid\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"merchanttype\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"transactionid\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"currency\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"amount\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"ipaddress\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"latitude\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"longitude\\\", \\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"transactiontimestamp\\\", \\\"type\\\": \\\"string\\\"}]}\",\"description\":\"original event\"}"
 	curl -u admin:admin -i -H "content-type: application/json" -d "$PAYLOAD" -X POST http://$AMBARI_HOST:7788/api/v1/schemaregistry/schemas/incoming_transaction/versions
+	PAYLOAD="{\"name\":\"customer_validation\",\"type\":\"avro\",\"schemaGroup\":\"transaction\",\"description\":\"customer validation\",\"evolve\":true,\"compatibility\":\"BACKWARD\"}"
+	curl -u admin:admin -i -H "content-type: application/json" -d "$PAYLOAD" -X POST http://$AMBARI_HOST:7788/api/v1/schemaregistry/schemas
+	PAYLOAD="{\"schemaText\":\"{\\\"type\\\":\\\"record\\\",\\\"name\\\":\\\"customer_validation\\\",\\\"fields\\\": [{\\\"name\\\": \\\"source\\\",\\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"accountNumber\\\",\\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"transactionId\\\",\\\"type\\\": \\\"string\\\"},{\\\"name\\\": \\\"fraudulent\\\",\\\"type\\\": \\\"string\\\"}]}\",\"description\":\"customer validation event\"}"
+	curl -u admin:admin -i -H "content-type: application/json" -d "$PAYLOAD" -X POST http://$AMBARI_HOST:7788/api/v1/schemaregistry/schemas/customer_validation/versions
 }
 
 createHbaseTables () {
@@ -132,5 +136,34 @@ configureHiveACID () {
 export ROOT_PATH=~/se-event-lab-1
 echo "*********************************ROOT PATH IS: $ROOT_PATH"
 
+captureEnvironment
+sleep 2
+
+createTransactionHistoryTable
+sleep 2
+
+createKafkaTopics
+sleep 2
+
+createSAMCluster
+sleep 2
+
+initializeSAMNamespace
+sleep 2
+
 uploadSAMExtensions
 sleep 2
+
+pushSchemasToRegistry
+sleep 2
+
+createHbaseTables
+sleep 2
+
+createPhoenixTables
+sleep 2
+
+configureHiveACID
+sleep 2
+
+exit 0
