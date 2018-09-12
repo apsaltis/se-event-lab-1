@@ -68,3 +68,27 @@ cd se-event-lab-1
 ```
 
 ## Go to Streaming Analytcis Manager UI
+1. Use the navigation bar at the right to open the built-in model registry.
+2. Click on +,upload the PMML Credit Fraud model pmml-credit-fraud.xml (see PMMLModel folder in this repository) and name it "credit-fraud".
+
+![Alt text](Screenshots/add-pmml.png)
+
+3. Download the CreditCard Fraud streaming application credit-fraud.json (see SAMTopology folder in this repository)
+
+4. Replace all occurences of {{HOST1}} with your Ambari hostname.
+
+3. Navigate to "My Applications", import the existing application and name it "Credit-Fraud".
+
+![Alt text](Screenshots/add-app.png)
+
+![Alt text](Screenshots/save-app.png)
+
+4. Review the analytics pipeline and get a understanding of the single steps.
+
+5. Make sure that you have the right hostname provided for the following processors: "IncomingTransactions", "GetCustomerDetails", "GetPurchaseAmountStats", "GetLastTransaction", "GetTransactionDistance", "SendStatusLegitimate", "SendStatusFraud", "UpsertLegitTransaction", "UpsertFraudTransaction", "TransactionHistoryOLAPIndex".
+
+6. Start the streaming application
+
+![Alt text](Screenshots/start-app.png)
+
+![Alt text](Screenshots/submit-app.png)
