@@ -116,7 +116,7 @@ initializeSAMNamespace () {
 }
 
 uploadSAMExtensions() {
-	git clone https://github.com/vakshorton/sam-custom-extensions.git
+	git clone https://github.com/martensa/sam-custom-extensions.git
 	cd $ROOT_PATH/sam-custom-extensions/sam-custom-udf/
 	mvn clean package
 	mvn assembly:assembly
