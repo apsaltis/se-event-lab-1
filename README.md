@@ -92,3 +92,13 @@ cd se-event-lab-1
 ![Alt text](Screenshots/start-app.png)
 
 ![Alt text](Screenshots/submit-app.png)
+
+## Explore the legitimate and fraudulemt transaction data
+1. Create your own visualization using Zeppelin
+2. Finalize the demo:
+[TransactionMonitorUI](https://github.com/vakshorton/CreditCardTransactionMonitor)
+[TransactionMonitorMobileApp](https://github.com/vakshorton/CreditCardTransactionMonitorMobileApp)
+
+## PMML model generation
+1. Import notebook note.json into Zeppelin (see Zeppelin folder in this repository)
+2. Review the Zeppelin notebook that was used to learn the PMML model
