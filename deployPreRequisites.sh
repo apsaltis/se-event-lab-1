@@ -53,6 +53,11 @@ getHiveServerHost () {
 }
 
 captureEnvironment () {
+	export USERID=admin
+	export PASSWD=HWDemo123!
+	export AMBARI_CREDS=$USERID:$PASSWD
+	export AMBARI_HOST=$(hostname -f)
+	export CLUSTER_NAME=$(curl -k -s -u $AMBARI_CREDS -X GET http://$AMBARI_HOST:8080/api/v1/clusters |grep cluster_name|grep -Po ': "(.+)'|grep -Po '[a-zA-Z0-9\-_!?.]+')
 	export ZK_HOST=$AMBARI_HOST
 	export COMETD_HOST=$AMBARI_HOST
 	HIVESERVER_HOST=$(getHiveServerHost)
