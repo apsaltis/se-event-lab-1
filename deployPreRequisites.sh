@@ -47,6 +47,13 @@ startService (){
        	fi
 }
 
+getServiceStatus () {
+       	SERVICE=$1
+       	SERVICE_STATUS=$(curl -k -s -u $AMBARI_CREDS -X GET http://$AMBARI_HOST:8080/api/v1/clusters/$CLUSTER_NAME/services/$SERVICE | grep '"state" :' | grep -Po '([A-Z]+)')
+
+       	echo $SERVICE_STATUS
+}
+
 getHiveServerHost () {
         HIVESERVER_HOST=$(curl -k -s -u $AMBARI_CREDS -X GET http://$AMBARI_HOST:8080/api/v1/clusters/$CLUSTER_NAME/services/HIVE/components/HIVE_SERVER|grep "host_name"|grep -Po ': "([a-zA-Z0-9\-_!?.]+)'|grep -Po '([a-zA-Z0-9\-_!?.]+)')
         echo $HIVESERVER_HOST
@@ -197,21 +204,6 @@ EOF
 	/usr/hdp/current/phoenix-client/bin/sqlline.py $ZK_HOST:2181:/hbase-unsecure create_customer_tables.sql
 }
 
-configureHiveACID () {
-	echo "*********************************Configuring Hive ACID..."
-	/var/lib/ambari-server/resources/scripts/configs.sh set $AMBARI_HOST $CLUSTER_NAME hive-site "hive.support.concurrency" "true"
-	sleep 1	
-	/var/lib/ambari-server/resources/scripts/configs.sh set $AMBARI_HOST $CLUSTER_NAME hive-site "hive.txn.manager" "org.apache.hadoop.hive.ql.lockmgr.DbTxnManager"
-	sleep 1	
-	/var/lib/ambari-server/resources/scripts/configs.sh set $AMBARI_HOST $CLUSTER_NAME hive-site "hive.exec.dynamic.partition.mode" "nonstrict"
-	sleep 1	
-	/var/lib/ambari-server/resources/scripts/configs.sh set $AMBARI_HOST $CLUSTER_NAME hive-site "hive.enforce.bucketing" "true"
-	sleep 1	
-	/var/lib/ambari-server/resources/scripts/configs.sh set $AMBARI_HOST $CLUSTER_NAME hive-site "hive.compactor.worker.threads" "1"
-	sleep 1	
-	/var/lib/ambari-server/resources/scripts/configs.sh set $AMBARI_HOST $CLUSTER_NAME hive-site "hive.compactor.initiator.on" "true"
-}
-
 
 
 export ROOT_PATH=~/se-event-lab-1
@@ -244,9 +236,6 @@ createHbaseTables
 sleep 2
 
 createPhoenixTables
-sleep 2
-
-configureHiveACID
 sleep 2
 
 exit 0
