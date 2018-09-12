@@ -217,6 +217,8 @@ configureHiveACID () {
 export ROOT_PATH=~/se-event-lab-1
 echo "*********************************ROOT PATH IS: $ROOT_PATH"
 
+sed -r -i 's;\{\{HOST1\}\};'$AMBARI_HOST';' $ROOT_PATH/SAMTopology/credit-fraud.json
+
 captureEnvironment
 sleep 2
 
