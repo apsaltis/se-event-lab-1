@@ -215,10 +215,10 @@ public class TransactionMonitorUI extends HttpServlet{
 	    	String transactionQueryString = null;
 	    	transactionQueryString = "SELECT TRANSACTIONID, ACCOUNTNUMBER, ACCOUNTTYPE, FRAUDULENT, "
 	    										+ "MERCHANTID, MERCHANTTYPE, AMOUNT, CURRENCY, LATITUDE, LONGITUDE, "
-	    										+ "TRANSACTIONTIMESTAMP, DISTANCEFROMHOME, DISTANCEFROMPREV"
-	    										+ "FROM TRANSACTIONHISTORY"
+	    										+ "TRANSACTIONTIMESTAMP, DISTANCEFROMHOME, DISTANCEFROMPREV "
+	    										+ "FROM TRANSACTIONHISTORY "
 	    										+ "WHERE TRANSACTIONID = '"+transactionId+"'";
-	    		transactionQueryString = "SELECT PK, "
+	    		/*transactionQueryString = "SELECT PK, "
 					+ "\"accountNumber\","
 					+ "\"accountType\","
 					+ "\"frauduent\","
@@ -234,7 +234,7 @@ public class TransactionMonitorUI extends HttpServlet{
 					+ "\"distanceFromHome\","
 					+ "\"distanceFromPrev\" "
 					+ " FROM \"TransactionHistory\" "
-					+ " WHERE \"transactionId\" = '" + transactionId + "'";
+					+ " WHERE \"transactionId\" = '" + transactionId + "'";*/
 	    	ResultSet rst;
 			try {
 				rst = conn.createStatement().executeQuery(transactionQueryString);
@@ -244,7 +244,7 @@ public class TransactionMonitorUI extends HttpServlet{
 					transaction.setAccountType(rst.getString("accounttype"));
 					transaction.setMerchantId(rst.getString("merchantid"));
 					transaction.setMerchantType(rst.getString("merchanttype"));
-					transaction.setFraudulent(rst.getString("frauduent"));
+					transaction.setFraudulent(rst.getString("fraudulent"));
 					transaction.setTransactionId(rst.getString("transactionid"));
 					transaction.setAmount(String.valueOf(rst.getDouble("amount")));
 					transaction.setCurrency(rst.getString("currency"));
