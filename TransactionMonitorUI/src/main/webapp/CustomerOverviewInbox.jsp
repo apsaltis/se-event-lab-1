@@ -274,15 +274,15 @@ div#account_container{
 <script src="https://code.highcharts.com/highcharts.js"></script>
 <script src="https://code.highcharts.com/highcharts-more.js"></script>
 <script src="https://code.highcharts.com/modules/exporting.js"></script>
-<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyB64AUJeFrg-8WkqDHYo4WtGjOoU1pUPxQ"></script>
+<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=${mapAPIKey}"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/dojo/1.7.8/dojo/dojo.js"></script>
 <script type="text/javascript">
   dojo.require("dojo.io.script");
   dojo.require("dojox.cometd");
   dojo.require("dojox.cometd.longPollTransport");
   
-  var cometdHost = "ccfrauddemo-hg1-2-20180711102402.c.hortonworks-204022.internal";
-  var cometdPort = "8099";
+  var cometdHost = "${cometdHost}";
+  var cometdPort = "${cometdPort}";
   var pubSubUrl = "http://" + cometdHost + ":" + cometdPort + "/cometd";
   var alertChannel = "/fraudAlert";
   var incomingTransactionsChannel = "/incomingTransactions";
